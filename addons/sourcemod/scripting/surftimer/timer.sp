@@ -84,13 +84,8 @@ public Action StartTimer(Handle timer, any client)
 	return Plugin_Handled;
 }
 
-public Action Timer_1m(Handle timer)
+public Action AttackTimer(Handle timer)
 {
-	if (GetConVarBool(g_hRecordAnnounce) && g_bHasLatestID)
-	{
-			db_checkAnnouncements();
-	}
-
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsValidClient(i) || IsFakeClient(i))
@@ -104,11 +99,10 @@ public Action Timer_1m(Handle timer)
 				g_AttackCounter[i] = g_AttackCounter[i] - 5;
 		}
 	}
-
 	return Plugin_Continue;
 }
 
-public Action Timer_100ms(Handle timer)
+public Action CKTimer1(Handle timer)
 {
 	if (g_bRoundEnd)
 		return Plugin_Continue;
@@ -144,8 +138,6 @@ public Action DelayedStuff(Handle timer)
 	else
 		SetFailState("<SurfTimer> cfg/sourcemod/surftimer/main.cfg not found.");
 
-	GameRules_SetProp("m_iRoundTime", 1200, 4, 0, true); // set timer display
-
 	return Plugin_Handled;
 }
 
@@ -156,23 +148,19 @@ public Action LoadReplaysTimer (Handle timer)
 	return Plugin_Handled;
 }
 
-public Action Timer_1s(Handle timer)
+public Action CKTimer2(Handle timer)
 {
 	if (g_bRoundEnd)
 		return Plugin_Continue;
 
 	if (GetConVarBool(g_hMapEnd))
 	{
-		Handle hTmp = FindConVar("mp_timelimit");
-		int iTimeLimit = -1;
-
+		Handle hTmp;
+		hTmp = FindConVar("mp_timelimit");
+		int iTimeLimit;
+		iTimeLimit = GetConVarInt(hTmp);
 		if (hTmp != null)
-		{
-			iTimeLimit = GetConVarInt(hTmp);
-		}
-
-		delete hTmp;
-
+			CloseHandle(hTmp);
 		if (iTimeLimit > 0)
 		{
 			int timeleft;
@@ -221,18 +209,6 @@ public Action Timer_1s(Handle timer)
 	{
 		if (!IsValidClient(i) || i == g_InfoBot)
 			continue;
-		
-		int team = GetClientTeam(i);
-
-		// Playtime
-		if (team == CS_TEAM_T || team == CS_TEAM_CT)
-		{
-			g_iPlayTimeAliveSession[i]++;
-		}
-		else
-		{
-			g_iPlayTimeSpecSession[i]++;
-		}
 
 		// overlay check
 		if (g_bOverlay[i] && GetGameTime() - g_fLastOverlay[i] > 5.0)
@@ -278,10 +254,13 @@ public Action Timer_1s(Handle timer)
 	}
 
 	// clean weapons on ground
+	int maxEntities;
+	maxEntities = GetMaxEntities();
 	char classx[20];
 	if (GetConVarBool(g_hCleanWeapons))
 	{
-		for (int j = MaxClients + 1; j < GetMaxEntities(); j++)
+		int j;
+		for (j = MaxClients + 1; j < maxEntities; j++)
 		{
 			if (IsValidEdict(j) && (GetEntDataEnt2(j, g_ownerOffset) == -1))
 			{
@@ -358,6 +337,9 @@ public Action SetClanTag(Handle timer, any client)
 	if (!IsValidClient(client) || IsFakeClient(client) || g_pr_Calculating[client])
 		return Plugin_Handled;
 
+	if (!g_hOverrideClantag.BoolValue)
+		return Plugin_Handled;
+
 	/*char buffer[MAX_NAME_LENGTH];
 	if (CS_GetClientClanTag(client, buffer,MAX_NAME_LENGTH) > 0)
 		return Plugin_Handled;
@@ -380,41 +362,35 @@ public Action SetClanTag(Handle timer, any client)
 
 	if (GetConVarBool(g_hCountry))
 	{
-		char tag[154];
-		Format(tag, 154, "%s | %s", g_szCountryCode[client], g_pr_rankname_style[client]);
-		if (g_iCurrentStyle[client] > 0)
-		{
-			char szStyle[128];
-			Format(szStyle, sizeof(szStyle), g_szStyleAcronyms[g_iCurrentStyle[client]]);
-			StringToUpper(szStyle);
-			Format(szStyle, sizeof(szStyle), "%s-", szStyle);
-			ReplaceString(tag, sizeof(tag), "{style}", szStyle);
-		}
-		else
-			ReplaceString(tag, sizeof(tag), "{style}", "");
-
-		CS_SetClientClanTag(client, tag);
+		char szTabRank[1024], szTabClanTag[1024];
+		Format(szTabRank, 1024, "%s", g_pr_chat_coloredrank[client]);
+		RemoveColors(szTabRank, 1024);
+		Format(szTabClanTag, 1024, "%s | %s", g_szCountryCode[client], szTabRank);
+		
+		if ((GetUserFlagBits(client) & ADMFLAG_ROOT || GetUserFlagBits(client) & ADMFLAG_GENERIC)) {
+			if (GetConVarBool(g_iAdminCountryTags))
+				CS_SetClientClanTag(client, szTabRank);
+			else 
+				CS_SetClientClanTag(client, szTabClanTag);
+		} 
+		else CS_SetClientClanTag(client, szTabClanTag);
 	}
 	else
 	{
 		if (GetConVarBool(g_hPointSystem))
 		{
-			char tag[154];
-			Format(tag, 154, "%s", g_pr_rankname_style[client]);
+			char szTabRank[1024], szTabClanTag[1024];
+			Format(szTabRank, 1024, "%s", g_pr_chat_coloredrank[client]);
+			RemoveColors(szTabRank, 1024);
+			Format(szTabClanTag, 1024, "%s", szTabRank);
 			
-			// Replace {style} with style
-			if (g_iCurrentStyle[client] > 0)
-			{
-				char szStyle[128];
-				Format(szStyle, sizeof(szStyle), g_szStyleAcronyms[g_iCurrentStyle[client]]);
-				StringToUpper(szStyle);
-				Format(szStyle, sizeof(szStyle), "%s-", szStyle);
-				ReplaceString(tag, sizeof(tag), "{style}", szStyle);
-			}
-			else
-				ReplaceString(tag, sizeof(tag), "{style}", "");
-
-			CS_SetClientClanTag(client, tag);
+			if ((GetUserFlagBits(client) & ADMFLAG_ROOT || GetUserFlagBits(client) & ADMFLAG_GENERIC)) {
+				if (GetConVarBool(g_iAdminCountryTags))
+					CS_SetClientClanTag(client, szTabRank);
+				else 
+					CS_SetClientClanTag(client, szTabClanTag);
+			} 
+			else CS_SetClientClanTag(client, szTabClanTag);
 		}
 	}
 
@@ -422,7 +398,7 @@ public Action SetClanTag(Handle timer, any client)
 	if (oldrank && GetConVarBool(g_hPointSystem))
 		if (!StrEqual(g_pr_rankname[client], old_pr_rankname, false) && IsValidClient(client))
 			CPrintToChat(client, "%t", "SkillGroup", g_szChatPrefix, g_pr_chat_coloredrank[client]);
-			
+
 	return Plugin_Handled;
 }
 
@@ -604,6 +580,36 @@ public Action FixBot_On(Handle timer)
 	ServerCommand("ck_bonus_bot 1");
 	ServerCommand("ck_wrcp_bot 1");
 	return Plugin_Handled;
+}
+
+public Action PlayTimeTimer(Handle timer)
+{
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if (IsValidClient(i) && !IsFakeClient(i) && IsClientInGame(i))
+		{
+			int team = GetClientTeam(i);
+
+			if (team == 2 || team == 3)
+			{
+				g_iPlayTimeAliveSession[i]++;
+			}
+			else
+			{
+				g_iPlayTimeSpecSession[i]++;
+			}
+		}
+	}
+
+	return Plugin_Continue;
+}
+
+public Action AnnouncementTimer(Handle timer)
+{
+	if (g_bHasLatestID)
+		db_checkAnnouncements();
+
+	return Plugin_Continue;
 }
 
 public Action EnableJoinMsgs(Handle timer)

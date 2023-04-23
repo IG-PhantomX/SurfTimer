@@ -264,7 +264,7 @@ int g_MapRankBonus[MAXZONEGROUPS][MAXPLAYERS + 1];
 int g_OldMapRankBonus[MAXZONEGROUPS][MAXPLAYERS + 1];
 
 // Has the client missed his best bonus time
-bool g_bMissedBonusBest[MAXPLAYERS + 1];
+int g_bMissedBonusBest[MAXPLAYERS + 1];
 
 // Used to make sure bonus finished prints are correct
 int g_tmpBonusCount[MAXZONEGROUPS];
@@ -699,7 +699,6 @@ GlobalForward g_BonusFinishForward;
 GlobalForward g_PracticeFinishForward;
 GlobalForward g_NewRecordForward;
 GlobalForward g_NewWRCPForward;
-GlobalForward g_StageFinishForward;
 
 /*----------  SQL Variables  ----------*/
 
@@ -1168,9 +1167,6 @@ char g_BlockedChatText[256][256];
 // Last time an overlay was displayed
 float g_fLastOverlay[MAXPLAYERS + 1];
 
-// Track player SDKHooks
-bool g_bClientHooksCalled[MAXPLAYERS + 1] = { false };
-
 /*----------  Player location restoring  ----------*/
 
 // Clients location was restored this run
@@ -1452,12 +1448,10 @@ float g_iNoclipSpeed[MAXPLAYERS + 1];
 // New speed limit variables
 bool g_bInBhop[MAXPLAYERS + 1];
 bool g_bFirstJump[MAXPLAYERS + 1];
+float g_iLastJump[MAXPLAYERS + 1];
 int g_iTicksOnGround[MAXPLAYERS + 1];
 bool g_bNewStage[MAXPLAYERS + 1];
 bool g_bLeftZone[MAXPLAYERS + 1];
-
-// new speed/bhop detection
-float g_tickSpeedCap[MAXPLAYERS + 1];
 
 int g_iClientTick[MAXPLAYERS + 1];
 
@@ -1572,18 +1566,6 @@ char g_sDecimalTables[][][] = {
 	{ "ck_prinfo",        "PRtimeinzone", },
 	{ "ck_wrcps",         "runtimepro", }
 };  // Required for the float to decimal conversion
-
-char g_sSteamIdTablesCleanup[][] = {
-	"ck_bonus", 
-	"ck_checkpoints", 
-	"ck_latestrecords", 
-	"ck_playeroptions2", 
-	"ck_playerrank", 
-	"ck_playertemp", 
-	"ck_playertimes", 
-	"ck_prinfo", 
-	"ck_vipadmins"
-};
 
 bool g_tables_converted = false;
 

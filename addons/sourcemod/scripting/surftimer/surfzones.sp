@@ -146,25 +146,13 @@ public void CreateZoneEntity(int zoneIndex)
 
 public Action IgnoreTriggers(int entity, int client) //add command to !options
 {
-	if (!IsValidClient(client) || !IsPlayerAlive(client))
-	{
-		return Plugin_Continue;
-	}
+	if (!(client > 0 && client <= MaxClients) || !IsPlayerAlive(client)) return Plugin_Continue;
 
-	if (IsFakeClient(client))
-	{
-		return Plugin_Handled;
-	}
+	if (IsFakeClient(client)) return Plugin_Handled;
 
-	if (GetEntityMoveType(client) != MOVETYPE_NOCLIP)
-	{
-		return Plugin_Continue;
-	}
+	if (GetEntityMoveType(client) != MOVETYPE_NOCLIP) return Plugin_Continue;
 
-	if (g_iDisableTriggers[client])
-	{
-		return Plugin_Continue;
-	}
+	if (g_iDisableTriggers[client]) return Plugin_Continue;
 
 	return Plugin_Handled;
 } 
@@ -175,7 +163,7 @@ public Action StartTouchTrigger(int caller, int activator)
 	int client = activator;
 
 	// Ignore dead players
-	if (!IsValidClient(client) || !IsPlayerAlive(client)) {
+	if (!IsValidClient(client)) {
 		return Plugin_Continue;
 	}
 
@@ -261,7 +249,7 @@ public Action EndTouchTrigger(int caller, int activator)
 	int client = activator;
 
 	// Ignore dead players
-	if (!IsValidClient(client) || !IsPlayerAlive(client)) {
+	if (!IsValidClient(client)) {
 		return Plugin_Continue;
 	}
 
@@ -310,8 +298,6 @@ public void StartTouch(int client, int action[3])
 	/* if (g_iClientInZone[client][0] > 0){
 		g_TeleInTriggerMultiple[client] = false;
 	} */
-
-	float speedCap = g_mapZones[g_iClientInZone[client][3]].PreSpeed;
 
 	if (IsValidClient(client))
 	{
@@ -400,11 +386,6 @@ public void StartTouch(int client, int action[3])
 			g_iCurrentStyle[client] = g_iInitalStyle[client];
 			lastCheckpoint[g_iClientInZone[client][2]][client] = 1;
 			g_bSaveLocTele[client] = false;
-
-			if (speedCap > 0.0)
-			{
-				ApplySpeedCapXY(client, g_mapZones[g_iClientInZone[client][3]].PreSpeed);
-			}
 
 			// StopRecording(client); //Add pre
 			StartRecording(client); //Add pre
@@ -499,14 +480,8 @@ public void StartTouch(int client, int action[3])
 			g_bInDuck[client] = false;
 			g_KeyCount[client] = 0;
 
-			if (speedCap > 0.0)
-			{
-				ApplySpeedCapXY(client, g_mapZones[g_iClientInZone[client][3]].PreSpeed);
-			}
-
 			// Prevents the Stage(X) replay from starting before the Stage(X) start zone
 			g_iStageStartTouchTick[client] = g_iRecordedTicks[client]; //Add pre
-			
 			// stop bot wrcp timer
 			if (client == g_WrcpBot)
 			{

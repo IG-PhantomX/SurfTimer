@@ -58,6 +58,8 @@ public void CL_OnStartTimerPress(int client)
 		g_fCurrentRunTime[client] = 0.0;
 		g_fPracModeStartTime[client] = GetClientTickTime(client);
 		g_bPositionRestored[client] = false;
+		g_bMissedMapBest[client] = true;
+		g_bMissedBonusBest[client] = true;
 		g_bTimerRunning[client] = true;
 		g_bTop10Time[client] = false;
 		
@@ -86,10 +88,11 @@ public void CL_OnStartTimerPress(int client)
 				g_iStageAttemptsNew[client][i] = 0;
 
 			// Set missed record time variables
-			if (g_iClientInZone[client][2] == 0) // main map
+			if (g_iClientInZone[client][2] == 0)
 			{
-				if (g_fPersonalRecord[client] > 0.0 || g_fPersonalStyleRecord[g_iCurrentStyle[client]][client] > 0.0) 
+				if (g_fPersonalRecord[client] > 0.0) {
 					g_bMissedMapBest[client] = false;
+				}
 
 				iPrestrafeRecord = g_iRecordPreStrafe[g_PreSpeedMode[client]][0][g_iCurrentStyle[client]];
 				iPersonalPrestrafeRecord = g_iPersonalRecordPreStrafe[client][1][0][g_iCurrentStyle[client]];
@@ -97,10 +100,11 @@ public void CL_OnStartTimerPress(int client)
 				SetPrestrafe(client, 0, g_iCurrentStyle[client], true, false, false );
 				SetPrestrafe(client, 1, g_iCurrentStyle[client], true, false, false );
 			}
-			else // bonus
+			else
 			{
-				if (g_fPersonalRecordBonus[g_iClientInZone[client][2]][client] > 0.0 || g_fStylePersonalRecordBonus[g_iCurrentStyle[client]][g_iClientInZone[client][2]][client] > 0.0) 
+				if (g_fPersonalRecordBonus[g_iClientInZone[client][2]][client] > 0.0) {
 					g_bMissedBonusBest[client] = false;
+				}
 
 				iPrestrafeRecord = g_iRecordPreStrafeBonus[g_PreSpeedMode[client]][g_iClientInZone[client][2]][g_iCurrentStyle[client]];
 				iPersonalPrestrafeRecord = g_iPersonalRecordPreStrafeBonus[client][g_PreSpeedMode[client]][g_iClientInZone[client][2]][g_iCurrentStyle[client]];
@@ -934,8 +938,8 @@ public void CL_OnEndWrcpTimerPress(int client, float time2)
 
 	int stage = g_WrcpStage[client];
 	// Get Client Name
-	char szName[MAX_NAME_LENGTH];
-	GetClientName(client, szName, sizeof(szName));
+	char szName[128];
+	GetClientName(client, szName, 128);
 
 	if (g_bWrcpEndZone[client])
 	{
@@ -964,23 +968,20 @@ public void CL_OnEndWrcpTimerPress(int client, float time2)
 			return;
 		}
 
-		char sz_srDiff[128], sz_srRawDiff[128];
+		char sz_srDiff[128];
 		float time = g_fFinalWrcpTime[client];
 		float f_srDiff = (g_fStageRecord[stage] - time);
-		FormatTimeFloat(client, f_srDiff, 3, sz_srDiff, sizeof(sz_srDiff));
-		FormatTimeFloat(client, f_srDiff, 3, sz_srRawDiff, sizeof(sz_srRawDiff));
+		FormatTimeFloat(client, f_srDiff, 3, sz_srDiff, 128);
 		if (f_srDiff > 0)
 		{
-			Format(sz_srDiff, sizeof(sz_srDiff), "%cSR: %c-%s%c", WHITE, LIGHTGREEN, sz_srDiff, WHITE);
-			Format(sz_srRawDiff, sizeof(sz_srRawDiff), "-%s", sz_srRawDiff);
+			Format(sz_srDiff, 128, "%cSR: %c-%s%c", WHITE, LIGHTGREEN, sz_srDiff, WHITE);
 		}
 		else
 		{
-			Format(sz_srDiff, sizeof(sz_srDiff), "%cSR: %c+%s%c", WHITE, RED, sz_srDiff, WHITE);
-			Format(sz_srRawDiff, sizeof(sz_srRawDiff), "+%s", sz_srRawDiff);
+			Format(sz_srDiff, 128, "%cSR: %c+%s%c", WHITE, RED, sz_srDiff, WHITE);
 		}
 
-		FormatTimeFloat(client, g_fFinalWrcpTime[client], 3, g_szFinalWrcpTime[client], sizeof(g_szFinalWrcpTime));
+		FormatTimeFloat(client, g_fFinalWrcpTime[client], 3, g_szFinalWrcpTime[client], 32);
 		// Make a new stage replay bot?
 		if (GetConVarBool(g_hReplaceReplayTime) && (!g_bStageReplay[stage] || g_fFinalWrcpTime[client] < g_fStageReplayTimes[stage]))
 		{
@@ -1002,8 +1003,7 @@ public void CL_OnEndWrcpTimerPress(int client, float time2)
 		}
 
 		db_selectWrcpRecord(client, 0, stage);
-
-		SendStageFinishedForward(client, stage, sz_srRawDiff, g_fStageRecord[stage]);
+		
 		g_bWrcpTimeractivated[client] = false;
 	}
 	else if (g_bWrcpTimeractivated[client] && g_iCurrentStyle[client] != 0) // styles
@@ -1016,27 +1016,23 @@ public void CL_OnEndWrcpTimerPress(int client, float time2)
 			return;
 		}
 
-		char sz_srDiff[128], sz_srRawDiff[128];
+		char sz_srDiff[128];
 		float time = g_fFinalWrcpTime[client];
 		float f_srDiff = (g_fStyleStageRecord[style][stage] - time);
-		FormatTimeFloat(client, f_srDiff, 3, sz_srDiff, sizeof(sz_srDiff));
-		FormatTimeFloat(client, f_srDiff, 3, sz_srRawDiff, sizeof(sz_srRawDiff));
+		FormatTimeFloat(client, f_srDiff, 3, sz_srDiff, 128);
 		if (f_srDiff > 0)
 		{
-			Format(sz_srDiff, sizeof(sz_srDiff), "%cSR: %c-%s%c", WHITE, LIGHTGREEN, sz_srDiff, WHITE);
-			Format(sz_srRawDiff, sizeof(sz_srRawDiff), "-%s", sz_srRawDiff);
+			Format(sz_srDiff, 128, "%cSR: %c-%s%c", WHITE, LIGHTGREEN, sz_srDiff, WHITE);
 		}
 		else
 		{
-			Format(sz_srDiff, sizeof(sz_srDiff), "%cSR: %c+%s%c", WHITE, RED, sz_srDiff, WHITE);
-			Format(sz_srRawDiff, sizeof(sz_srRawDiff), "+%s", sz_srRawDiff);
+			Format(sz_srDiff, 128, "%cSR: %c+%s%c", WHITE, RED, sz_srDiff, WHITE);
 		}
 
-		FormatTimeFloat(client, g_fFinalWrcpTime[client], 3, g_szFinalWrcpTime[client], sizeof(g_szFinalWrcpTime));
+		FormatTimeFloat(client, g_fFinalWrcpTime[client], 3, g_szFinalWrcpTime[client], 32);
 		
 		db_selectWrcpRecord(client, style, stage);
-
-		SendStageFinishedForward(client, stage, sz_srRawDiff, g_fStyleStageRecord[g_iCurrentStyle[client]][stage]);
+		
 		g_bWrcpTimeractivated[client] = false;
 	}
 }
