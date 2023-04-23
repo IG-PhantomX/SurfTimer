@@ -4658,6 +4658,7 @@ public void totalTimeForHumans(int unix, char[] buffer, int size)
 	}
 }
 
+// set VIP flag to SourceBans p flag (custom2)
 bool IsPlayerVip(int client, bool admin = true, bool reply = false)
 {
 	if (admin)
@@ -4666,22 +4667,19 @@ bool IsPlayerVip(int client, bool admin = true, bool reply = false)
 			return true;
 	}
 
-	if (CheckCommandAccess(client, "", g_VipFlag))
-			return true;
-
-	if (!g_bVip[client] && !g_iHasEnforcedTitle[client])
+	if (!CheckCommandAccess(client, "", ADMFLAG_CUSTOM2))
+	
 	{
 		if (reply)
 		{
 			CPrintToChat(client, "%t", "Misc43", g_szChatPrefix);
-			PrintToConsole(client, "SurfTimer | This is a VIP feature");
+			PrintToConsole(client, "Imperfect Gamers | This is a VIP feature");
 		}
 		return false;
 	}
 
 	return true;
 }
-
 
 public float GetStrafeSync(int client, bool sync)
 {
