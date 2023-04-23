@@ -144,6 +144,8 @@ public Action DelayedStuff(Handle timer)
 	else
 		SetFailState("<SurfTimer> cfg/sourcemod/surftimer/main.cfg not found.");
 
+	GameRules_SetProp("m_iRoundTime", 1200, 4, 0, true); // set timer display
+
 	return Plugin_Handled;
 }
 

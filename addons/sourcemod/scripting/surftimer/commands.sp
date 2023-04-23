@@ -131,19 +131,26 @@ void CreateCommands()
 	RegConsoleCmd("sm_vip", Command_Vip, "[surftimer] [vip] Displays the VIP menu to client");
 	RegConsoleCmd("sm_mytitle", Command_PlayerTitle, "[surftimer] [vip] Displays a menu to the player showing their custom title and allowing them to change their colours");
 	RegConsoleCmd("sm_title", Command_PlayerTitle, "[surftimer] [vip] Displays a menu to the player showing their custom title and allowing them to change their colours");
-	RegConsoleCmd("sm_customtitle", Command_SetDbTitle, "[surftimer] [vip] VIPs can set their own custom title into a db");
+//	RegConsoleCmd("sm_customtitle", Command_SetDbTitle, "[surftimer] [vip] VIPs can set their own custom title into a db");
 	RegConsoleCmd("sm_namecolour", Command_SetDbNameColour, "[surftimer] [vip] VIPs can set their own custom name colour into the db");
 	RegConsoleCmd("sm_textcolour", Command_SetDbTextColour, "[surftimer] [vip] VIPs can set their own custom text colour into the db");
 	RegConsoleCmd("sm_ve", Command_VoteExtend, "[surftimer] [vip] Vote to extend the map");
 	RegConsoleCmd("sm_colours", Command_ListColours, "[surftimer] Lists available colours for sm_mytitle and sm_namecolour");
 	RegConsoleCmd("sm_colors", Command_ListColours, "[surftimer] Lists available colours for sm_mytitle and sm_namecolour");
 	RegConsoleCmd("sm_toggletitle", Command_ToggleTitle, "[surftimer] [vip] VIPs can toggle their title.");
-	RegConsoleCmd("sm_joinmsg", Command_JoinMsg, "[surftimer] [vip] Allows a vip to set their join msg");
+//	RegConsoleCmd("sm_joinmsg", Command_JoinMsg, "[surftimer] [vip] Allows a vip to set their join msg");
+	RegConsoleCmd("sm_vmute", Command_Vmute, "[ImperfectGamers] [vip] Toggle vmute on a player"); 
+// IG give/remove titles commands
+	RegAdminCmd("sm_givetitle", Command_GiveTitle, ADMFLAG_CUSTOM3, "[ImperfectGamers] Grants a title to a player");
+    RegAdminCmd("sm_removetitle", Command_RemoveTitle, ADMFLAG_CUSTOM3, "[ImperfectGamers] Removes a title from a player");
+
+    //	Add extendmap command for zoners - flag O
+    RegAdminCmd("sm_extendmap", Command_ExtendMap, ADMFLAG_CUSTOM1, "[IG] Extend the map by specified minutes");
 
 	// Automatic Donate Commands
-	RegAdminCmd("sm_givevip", VIP_GiveVip, ADMFLAG_ROOT, "[surftimer] Give a player VIP");
-	RegAdminCmd("sm_removevip", VIP_RemoveVip, ADMFLAG_ROOT, "[surftimer] Remove a players VIP");
-	RegAdminCmd("sm_addcredits", VIP_GiveCredits, ADMFLAG_ROOT, "[surftimer] Give a player credits");
+//  RegAdminCmd("sm_givevip", VIP_GiveVip, ADMFLAG_ROOT, "[surftimer] Give a player VIP");
+//  RegAdminCmd("sm_removevip", VIP_RemoveVip, ADMFLAG_ROOT, "[surftimer] Remove a players VIP");
+    RegAdminCmd("sm_addcredits", VIP_GiveCredits, ADMFLAG_ROOT, "[surftimer] Give a player credits");
 
 	// WRCPs
 	RegConsoleCmd("sm_wrcp", Client_Wrcp, "[surftimer] displays stage times for map");
@@ -6723,6 +6730,70 @@ public Action Command_NextRank(int client, int args)
 		return Plugin_Handled;
 
 	db_ViewPlayerRank(client);
+
+	return Plugin_Handled;
+}
+
+//ADD vmute command for VIPs only
+#include <sourcecomms>
+public Action Command_Vmute(int client, int args)
+{
+	if (!IsValidClient(client) || !IsPlayerVip(client))
+		return Plugin_Handled;
+
+	if (args < 1)
+	{
+		CReplyToCommand(client, "Usage: <name> - mutes / unmutes the given player (30 minutes)");
+		return Plugin_Handled;
+	}
+
+	char clientName[MAX_NAME_LENGTH];
+	GetClientName(client, clientName, sizeof(clientName));
+	char reason[128];
+	Format(reason, sizeof(reason), "vmute by %s", clientName);
+
+	char target[128];
+	GetCmdArg(1, target, sizeof(target));
+
+	int targetId = FindTarget(client, target, true, false);
+	if (targetId < 0) {
+			CReplyToCommand(client, "Target player not found");
+			return Plugin_Handled;
+	}
+
+	char targetNamed[128];
+	GetClientName(targetId, targetNamed, sizeof(targetNamed));
+
+	bType isMuted = SourceComms_GetClientMuteType(targetId);
+	if (isMuted == bNot) {
+			SourceComms_SetClientMute(targetId, true, 30, true, reason);
+			CPrintToChatAll("VIP %s muted %s for 30 minutes", clientName, targetNamed);
+	} else if (isMuted == bPerm) {
+			CReplyToCommand(client, "Cannot unmute a permanately muted player using vmute.");
+	} else {
+			SourceComms_SetClientMute(targetId, false, -1, false, reason);
+			CPrintToChatAll("VIP %s unmuted %s temporarily", clientName, targetNamed);
+	}
+
+	return Plugin_Handled;
+}
+// Add extendmap for zoners
+public Action Command_ExtendMap(int client, int args)
+{
+	char arg1[32];
+	GetCmdArg(1, arg1, sizeof(arg1));
+
+	if (!arg1[0])
+		return Plugin_Handled;
+
+	int minutes = StringToInt(arg1);
+
+	if (minutes > 0)
+	{
+		int seconds = minutes * 60;
+		ExtendMapTimeLimit(seconds);
+		GameRules_SetProp("m_iRoundTime", GameRules_GetProp("m_iRoundTime", 4, 0) + seconds, 4, 0, true);
+	}
 
 	return Plugin_Handled;
 }
